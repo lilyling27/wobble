@@ -10,7 +10,7 @@ from .utils import fit_continuum
 # attributes!
 REQUIRED_3D = ['xs', 'ys', 'ivars'] # R-order lists of (N-epoch, M-pixel) arrays
 REQUIRED_1D = ['bervs', 'airms'] # N-epoch arrays
-OPTIONAL_1D = ['pipeline_rvs', 'pipeline_sigmas', 'dates', 'drifts', 'filelist'] # N-epoch arrays
+OPTIONAL_1D = ['pipeline_rvs', 'pipeline_sigmas', 'pipeline_epochs', 'dates', 'drifts', 'filelist'] # N-epoch arrays
                     # optional attributes always exist in Data() but may be filled with placeholders.
                     # they do not need to exist at all in an individual Spectrum().
 
@@ -543,6 +543,7 @@ class Spectrum(object):
             try:
                 metadata['pipeline_rvs']    = ccf_rvs.at[extr_file,'V'] / 100   # m/s
                 metadata['pipeline_sigmas'] = ccf_rvs.at[extr_file,'E_V'] / 100 # m/s
+                metadata['pipeline_epochs'] = ccf_rvs.at[extr_file,'RVEPOCH']
             except KeyError:
                 print(f'No CCF RV for: {extr_file}')
             
