@@ -156,21 +156,21 @@ class Model(object):
             if not c.template_fixed:
                 #c.dnll_dtemplate_ys = tf.gradients(self.nll, c.template_ys)
                 c.dnll_dtemplate_ys = gtape.gradient(self.nll, c.template_ys)
-                c.opt_template = tf.train.AdamOptimizer(c.learning_rate_template).minimize(self.nll,
+                c.opt_template = tf.optimizers.Adam(c.learning_rate_template).minimize(self.nll,
                             var_list=[c.template_ys], name='opt_minimize_template_{0}'.format(c.name))
                 self.updates.append(c.opt_template)
             if not c.rvs_fixed:
                 #c.dnll_drvs = tf.gradients(self.nll, c.rvs)
                 c.dnll_drvs = gtape.gradient(self.nll, c.rvs)
-                c.opt_rvs = tf.train.AdamOptimizer(learning_rate=c.learning_rate_rvs,
+                c.opt_rvs = tf.optimizers.Adam(learning_rate=c.learning_rate_rvs,
                                                    epsilon=1.).minimize(self.nll,
                             var_list=[c.rvs], name='opt_minimize_rvs_{0}'.format(c.name))
                 self.updates.append(c.opt_rvs)
             if c.K > 0:
-                c.opt_basis_vectors = tf.train.AdamOptimizer(c.learning_rate_basis).minimize(self.nll,
+                c.opt_basis_vectors = tf.optimizers.Adam(c.learning_rate_basis).minimize(self.nll,
                             var_list=[c.basis_vectors], name='opt_minimize_basis_vectors_{0}'.format(c.name))
                 self.updates.append(c.opt_basis_vectors)
-                c.opt_basis_weights = tf.train.AdamOptimizer(c.learning_rate_basis).minimize(self.nll,
+                c.opt_basis_weights = tf.optimizers.Adam(c.learning_rate_basis).minimize(self.nll,
                             var_list=[c.basis_weights], name='opt_minimize_basis_weights_{0}'.format(c.name))
                 self.updates.append(c.opt_basis_weights)
         
