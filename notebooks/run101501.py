@@ -39,7 +39,8 @@ for r in range(len(data.orders)):
     model.add_telluric('tellurics', regularization_par_file=reg_t_file, variable_bases=K_t)
     #model.add_telluric('tellurics', regularization_par_file=reg_t_file, variable_bases=K_t,
     #                   learning_rate_template=lnrt['learning_rate_template'][r])
-    wobble.optimize_order(model,save_history=True,min_dnll=1e-4,niter=1500,return_best_iter=True)
+    #wobble.optimize_order(model,save_history=True,min_dnll=1e-4,niter=1500,return_best_iter=True)
+    wobble.optimize_order(model,save_history=True,niter=1500)
 results.combine_orders('star')
 results.write_rvs('star', f'./results/{date}_{star_name}_rvs{file_num}.txt')
 results.write(f'./results/{date}_{star_name}_results{file_num}.hdf5')
