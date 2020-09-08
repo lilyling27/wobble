@@ -1,7 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 import sys
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import h5py
 T = tf.float64
 
@@ -136,41 +136,40 @@ class Model(object):
 
     def setup(self):
         """Initialize component templates and do TensorFlow magic in prep for optimizing"""
-        with tf.GradientTape() as gtape:
-            # So I think gtape needs to be a thing for all of this so it knows to watch these variables
-            self.initialize_templates()
-            self.synth = tf.zeros(np.shape(self.data.xs[self.r]), dtype=T, name='synth')
-            for c in self.components:
-                c.setup(self.data, self.r)
-                self.synth = tf.add(self.synth, c.synth, name='synth_add_{0}'.format(c.name))
+        # So I think gtape needs to be a thing for all of this so it knows to watch these variables
+        self.initialize_templates()
+        self.synth = tf.zeros(np.shape(self.data.xs[self.r]), dtype=T, name='synth')
+        for c in self.components:
+            c.setup(self.data, self.r)
+            self.synth = tf.add(self.synth, c.synth, name='synth_add_{0}'.format(c.name))
 
-            self.nll = 0.5*tf.reduce_sum(tf.square(tf.constant(self.data.ys[self.r], dtype=T) 
-                                                   - self.synth, name='nll_data-model_sq') 
-                                        * tf.constant(self.data.ivars[self.r], dtype=T), name='nll_reduce_sum')
-            for c in self.components:
-                self.nll = tf.add(self.nll, c.nll, name='nll_add_{0}'.format(c.name))
+        self.nll = 0.5*tf.reduce_sum(tf.square(tf.constant(self.data.ys[self.r], dtype=T) 
+                                               - self.synth, name='nll_data-model_sq') 
+                                    * tf.constant(self.data.ivars[self.r], dtype=T), name='nll_reduce_sum')
+        for c in self.components:
+            self.nll = tf.add(self.nll, c.nll, name='nll_add_{0}'.format(c.name))
 
         # Set up optimizers
         self.updates = []
         for c in self.components:
             if not c.template_fixed:
-                #c.dnll_dtemplate_ys = tf.gradients(self.nll, c.template_ys)
-                c.dnll_dtemplate_ys = gtape.gradient(self.nll, c.template_ys)
-                c.opt_template = tf.optimizers.Adam(c.learning_rate_template).minimize(self.nll,
+                c.dnll_dtemplate_ys = tf.gradients(self.nll, c.template_ys)
+                #c.dnll_dtemplate_ys = gtape.gradient(self.nll, c.template_ys)
+                c.opt_template = tf.train.AdamOptimizer(c.learning_rate_template).minimize(self.nll,
                             var_list=[c.template_ys], name='opt_minimize_template_{0}'.format(c.name))
                 self.updates.append(c.opt_template)
             if not c.rvs_fixed:
-                #c.dnll_drvs = tf.gradients(self.nll, c.rvs)
-                c.dnll_drvs = gtape.gradient(self.nll, c.rvs)
-                c.opt_rvs = tf.optimizers.Adam(learning_rate=c.learning_rate_rvs,
+                c.dnll_drvs = tf.gradients(self.nll, c.rvs)
+                #c.dnll_drvs = gtape.gradient(self.nll, c.rvs)
+                c.opt_rvs = tf.train.AdamOptimizer(learning_rate=c.learning_rate_rvs,
                                                    epsilon=1.).minimize(self.nll,
                             var_list=[c.rvs], name='opt_minimize_rvs_{0}'.format(c.name))
                 self.updates.append(c.opt_rvs)
             if c.K > 0:
-                c.opt_basis_vectors = tf.optimizers.Adam(c.learning_rate_basis).minimize(self.nll,
+                c.opt_basis_vectors = tf.train.AdamOptimizer(c.learning_rate_basis).minimize(self.nll,
                             var_list=[c.basis_vectors], name='opt_minimize_basis_vectors_{0}'.format(c.name))
                 self.updates.append(c.opt_basis_vectors)
-                c.opt_basis_weights = tf.optimizers.Adam(c.learning_rate_basis).minimize(self.nll,
+                c.opt_basis_weights = tf.train.AdamOptimizer(c.learning_rate_basis).minimize(self.nll,
                             var_list=[c.basis_weights], name='opt_minimize_basis_weights_{0}'.format(c.name))
                 self.updates.append(c.opt_basis_weights)
         
