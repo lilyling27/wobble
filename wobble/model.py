@@ -4,6 +4,7 @@ import sys
 import tensorflow.compat.v1 as tf
 import h5py
 T = tf.float64
+tf.disable_v2_behavior()
 
 from .utils import bin_data, doppler, get_session
 from .interp import interp
