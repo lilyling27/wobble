@@ -447,7 +447,7 @@ class Component(object):
                                                     tf.reduce_sum(tf.square(self.basis_weights))))
 
         # Apply doppler and synthesize component model predictions
-        shifted_xs = tf.add(self.data_xs, tf.log(doppler(self.rvs))[:, None], name='shifted_xs_'+self.name)
+        shifted_xs = tf.add(self.data_xs, tf.math.log(doppler(self.rvs))[:, None], name='shifted_xs_'+self.name)
         inner_zeros = tf.zeros(shifted_xs.shape[:-1], dtype=T)
         expand_inner = lambda x: tf.add(x, inner_zeros[..., None], name='expand_inner_'+self.name)
         if self.K == 0:
