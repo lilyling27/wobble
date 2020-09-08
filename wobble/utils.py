@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import division, print_function
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import sys
+tf.disable_v2_behavior()
 
 speed_of_light = 2.99792458e8   # m/s
 

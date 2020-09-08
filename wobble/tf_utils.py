@@ -6,7 +6,8 @@ __all__ = ["load_op_library"]
 
 import os
 import sysconfig
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 
 def load_op_library(module_file, name):

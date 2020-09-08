@@ -1,10 +1,11 @@
 import numpy as np
 from scipy.optimize import minimize
 import h5py
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import matplotlib.pyplot as plt
 from astropy.table import Table, Column
 T = tf.float64
+tf.disable_v2_behavior()
 
 from .utils import get_session
 
