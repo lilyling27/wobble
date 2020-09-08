@@ -27,7 +27,7 @@ reg_t_file    = f'../regularization/55cnc_expres_t_K{K_t}.hdf5'
 star_name = '101501_expres'
 print(f'FINDING RVS FOR  {star_name}')
 data = wobble.Data(f'../data/{star_name}.hdf5', orders=np.arange(45,70))
-data.trim_bad_edges()
+#data.trim_bad_edges()
 #data = wobble.Data(f'../data/{star_name}.hdf5', orders=np.arange(20,86))
 results = wobble.Results(data=data)
 for r in range(len(data.orders)):
@@ -41,5 +41,5 @@ for r in range(len(data.orders)):
     #                   learning_rate_template=lnrt['learning_rate_template'][r])
     wobble.optimize_order(model,save_history=True,min_dnll=1e-4,niter=1500,return_best_iter=True)
 results.combine_orders('star')
-results.write_rvs('star', f'./Results/{date}_{star_name}_rvs{file_num}.txt')
-results.write(f'./Results/{date}_{star_name}_results{file_num}.hdf5')
+results.write_rvs('star', f'./results/{date}_{star_name}_rvs{file_num}.txt')
+results.write(f'./results/{date}_{star_name}_results{file_num}.hdf5')

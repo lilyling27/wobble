@@ -564,7 +564,7 @@ class Spectrum(object):
                 us = sp[1].data['uncertainty'].copy()
             
             #snrs = (int(sp[0].header['EXPCOUNT'])**0.5)*0.357 # SNR of entire observation from exposure meter
-            #snrs = np.nanmean(ys/us, axis=1) # Empirical SNR order by order
+            snrs = np.nanmean(ys/us, axis=1) # Empirical SNR order by order
             #invars = (snr**2/ys)/np.nanmean(ys,axis=1) # Scaling hack
             
             # EXPRES does have individual-pixel uncertainty estimates, should we just use those?
@@ -575,7 +575,7 @@ class Spectrum(object):
         
         if process:
             self.mask_low_pixels(min_flux=0.001)
-            self.mask_bad_edges(min_snr=10)  
+            self.mask_bad_edges(min_snr=50)  
             self.transform_log()
             #self.continuum_normalize() # Done using EXPRES continuum
             self.mask_high_pixels(max_flux=.5)
