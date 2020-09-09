@@ -42,5 +42,5 @@ for r in range(len(data.orders)):
     #wobble.optimize_order(model,save_history=True,min_dnll=1e-4,niter=1500,return_best_iter=True)
     wobble.optimize_order(model,save_history=True,niter=1500)
 results.combine_orders('star')
-results.write_rvs('star', f'./results/{date}_{star_name}_rvs{file_num}.txt')
-results.write(f'./results/{date}_{star_name}_results{file_num}.hdf5')
+results.write_rvs('star', f'./Results/{date}_{star_name}_rvs{file_num}.txt')
+results.write(f'./Results/{date}_{star_name}_results{file_num}.hdf5')
