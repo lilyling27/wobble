@@ -152,6 +152,9 @@ class History(object):
                 
     def save_plots(self, basename, epochs_to_plot=[0,50], movies=True):
         plt.scatter(np.arange(len(self.nll_history)), self.nll_history)
+        plt.title(f'Order {self.order}')
+        plt.xlabel('Iteration')
+        plt.ylabel('NLL')
         ax = plt.gca()
         ax.set_yscale('log')
         plt.savefig(basename+'_order{0}_nll.png'.format(self.order))   

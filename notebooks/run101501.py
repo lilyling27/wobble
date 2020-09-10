@@ -25,6 +25,7 @@ reg_t_file    = f'../regularization/55cnc_expres_t_K{K_t}.hdf5'
 
 
 star_name = '101501_expres'
+hist_base = f'./Figures/History/{date}_{star_name}_{file_num}'
 print(f'FINDING RVS FOR  {star_name}')
 data = wobble.Data(f'../data/{star_name}.hdf5', orders=np.arange(45,70))
 #data.trim_bad_edges()
@@ -40,7 +41,7 @@ for r in range(len(data.orders)):
     #model.add_telluric('tellurics', regularization_par_file=reg_t_file, variable_bases=K_t,
     #                   learning_rate_template=lnrt['learning_rate_template'][r])
     #wobble.optimize_order(model,save_history=True,min_dnll=1e-4,niter=1500,return_best_iter=True)
-    wobble.optimize_order(model,save_history=True,niter=1500)
+    wobble.optimize_order(model,save_history=True,basename=hist_base,niter=1500)
 results.combine_orders('star')
 results.write_rvs('star', f'./Results/{date}_{star_name}_rvs{file_num}.txt')
 results.write(f'./Results/{date}_{star_name}_results{file_num}.hdf5')
