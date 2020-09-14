@@ -180,7 +180,7 @@ class Model(object):
         session.run(tf.global_variables_initializer())
 
     def optimize(self, niter=100, save_history=False, basename='wobble',
-                 movies=False, epochs_to_plot=[0,1,2], verbose=True, 
+                 movies=False, epochs_to_plot=[0,1,2], verbose=True,
                  rv_uncertainties=True, template_uncertainties=False, **kwargs):
         """Optimize the model!
             
@@ -223,7 +223,7 @@ class Model(object):
                     session.run(c.opt_template, **kwargs)
             for c in self.components:
                 if not c.rvs_fixed:
-                    for _ in range(c.rv_steps):
+                    for _ in range(c.rv_opt_steps):
                         session.run(c.opt_rvs, **kwargs)
             if save_history:
                 history.save_iter(self, i+1)
@@ -316,7 +316,7 @@ class Component(object):
     template_fixed : `bool` (default `False`)
         If `True`, fix the template to its initial values and do not
         optimize.
-    rv_steps : `int` (default `1`)
+    rv_opt_steps : `int` (default `1`)
         Number of times to step the RV optimizer every time the
         template optimizer is stepped.
     variable_bases : `int` (default `0`)
@@ -377,14 +377,14 @@ class Component(object):
         Not recommended to change, as this is degenerate with basis vectors.
     """
     def __init__(self, name, r, starting_rvs, epoch_mask, 
-                 rvs_fixed=False, template_fixed=False, rv_steps = 1,
+                 rvs_fixed=False, template_fixed=False, rv_opt_steps = 1,
                  variable_bases=0, scale_by_airmass=False,
                  template_xs=None, template_ys=None, initialize_at_zero=False,    
                  learning_rate_rvs=1., learning_rate_template=0.01, 
                  learning_rate_basis=0.01, regularization_par_file=None, 
                  **kwargs):
         for attr in ['name', 'r', 'starting_rvs', 'epoch_mask',
-                    'rvs_fixed', 'template_fixed', 'rv_steps', 
+                    'rvs_fixed', 'template_fixed', 'rv_opt_steps', 
                     'template_xs', 'template_ys', 'initialize_at_zero',
                     'learning_rate_rvs', 'learning_rate_template',
                     'learning_rate_basis', 'scale_by_airmass']:
