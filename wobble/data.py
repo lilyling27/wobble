@@ -538,14 +538,6 @@ class Spectrum(object):
         metadata = {}
         metadata['filelist'] = filename
         with fits.open(filename) as sp: # load up metadata
-            extr_file = '{}_{}.fits'.format(sp[0].header['OBJECT'].strip(),
-                                            sp[0].header['OBS_ID'].strip())
-            try:
-                metadata['pipeline_rvs']    = ccf_rvs.at[extr_file,'V'] / 100   # m/s
-                metadata['pipeline_sigmas'] = ccf_rvs.at[extr_file,'E_V'] / 100 # m/s
-                metadata['pipeline_epochs'] = ccf_rvs.at[extr_file,'RVEPOCH']
-            except KeyError:
-                print(f'No CCF RV for: {extr_file}')
             
             # Drift is dealt with via the wavelength solution
             # WILL HAVE TO THINK HARDER ABOUT HOW WOBBLE WILL FEEL ABOUT THISs
@@ -554,6 +546,18 @@ class Spectrum(object):
             metadata['bervs'] = float(sp[2].header['HIERARCH wtd_single_channel_bc']) * 299792458. # m/s
             metadata['airms'] = float(sp[0].header['AIRMASS']) # Average airmass at center of exposure (though I can also get beginning or end)
             
+            extr_file = '{}_{}.fits'.format(sp[0].header['OBJECT'].strip(),
+                                            sp[0].header['OBS_ID'].strip())
+            try:
+                metadata['pipeline_rvs']    = ccf_rvs.at[extr_file,'V'] / 100   # m/s
+                metadata['pipeline_sigmas'] = ccf_rvs.at[extr_file,'E_V'] / 100 # m/s
+                metadata['pipeline_epochs'] = ccf_rvs.at[extr_file,'RVEPOCH']
+
+                # Adjust pipeline RV to observatory rest frame
+                metadata['pipeline_rvs'] -= metadata['bervs']
+            except KeyError:
+                print(f'No CCF RV for: {extr_file}')
+
             # Load Spectrum
             xs = sp[1].data['wavelength'].copy()
             if process: # continuum normalize
@@ -571,6 +575,7 @@ class Spectrum(object):
             invars = us.copy()**-2
             
             sp.close()
+
         self.populate(xs, ys, invars, **metadata)
         
         if process:
