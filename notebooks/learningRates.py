@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 T = tf.float64
 from tqdm import tqdm
 import h5py
@@ -104,7 +104,7 @@ def modelSetup(data, results, r, reg_star_file, reg_t_file,
     
     return model
 
-def test_learningRate_combo(model, niter=100, rv_steps=20,
+def test_learningRate_combo(model, niter=100, rv_opt_steps=20,
                             star_template_lr = 0.1, star_rv_lr=1, 
                             telluric_template_lr=0.01):
     """
@@ -121,30 +121,13 @@ def test_learningRate_combo(model, niter=100, rv_steps=20,
     # Test if learning rates are too high
     # i.e. allow for oscillation in the nll
     history = History(model, niter+1)
+    history.nll_history.fill(np.inf)
     history.save_iter(model, 0)
     init_nll = history.nll_history[0]
     
     session = get_session()
-    # Run optimizer once
-    for c in model.components:
-        if not c.template_fixed:
-            session.run(c.opt_template,feed_dict=feed_dict)
-        if c.K > 0:
-            session.run(c.opt_basis_vectors,feed_dict=feed_dict)
-    for c in model.components:
-        if not c.rvs_fixed:
-            for _ in range(c.rv_steps):
-                session.run(c.opt_rvs,feed_dict=feed_dict)
-        if c.K > 0:
-            session.run(c.opt_basis_weights,feed_dict=feed_dict)
-    history.save_iter(model, 1)
-    nll1 = history.nll_history[1]
-    
-    if nll1 > init_nll:
-        return history
-    
-    # Run through specified number of iterations
-    for i in range(niter-1): # A -1 since we ran it once already
+    # Run optimizer
+    for i in range(niter):
         for c in model.components:
             if not c.template_fixed:
                 session.run(c.opt_template,feed_dict=feed_dict)
@@ -152,15 +135,15 @@ def test_learningRate_combo(model, niter=100, rv_steps=20,
                 session.run(c.opt_basis_vectors,feed_dict=feed_dict)
         for c in model.components:
             if not c.rvs_fixed:
-                for _ in range(c.rv_steps):
+                for _ in range(c.rv_opt_steps):
                     session.run(c.opt_rvs,feed_dict=feed_dict)
             if c.K > 0:
                 session.run(c.opt_basis_weights,feed_dict=feed_dict)
-        history.save_iter(model, i+2)
+        history.save_iter(model, i+1)
     
     return history
 
-def improve_learningRates(model, niter=100, rv_steps=20, plot=False, plot_dir='',
+def improve_learningRates(model, niter=100, rv_opt_steps=20, plot=False, plot_dir='',
                           init_lr_star_template = 0.1, init_lr_star_rv = 1,
                           init_lr_t_template = 0.01, finer_grid=False):
     """
@@ -179,10 +162,9 @@ def improve_learningRates(model, niter=100, rv_steps=20, plot=False, plot_dir=''
         for j in range(len(lrs_range)):
             lr_st = init_lr_star_template*lrs_range[::-1][j]
             session.run(tf.compat.v1.global_variables_initializer()) # THIS RESETS THE MODEL???
-            history = test_learningRate_combo(model, niter=niter,rv_steps=rv_steps,
+            history = test_learningRate_combo(model, niter=niter,rv_opt_steps=rv_opt_steps,
                                     star_template_lr=lr_st,telluric_template_lr=lr_t)
-            result_grid[i*len(lrs_range)+j] = [lr_t,lr_st,
-                                               np.where(history.nll_history[-1]<1,np.inf,history.nll_history[-1]<1),
+            result_grid[i*len(lrs_range)+j] = [lr_t,lr_st, history.nll_history[-1],
                                                history.nll_history[1]-history.nll_history[0]]
             if plot: # Save nlls for plotting
                 nll_grid.append(np.copy(history.nll_history))
@@ -210,7 +192,7 @@ def improve_learningRates(model, niter=100, rv_steps=20, plot=False, plot_dir=''
             for j in range(len(lrs_range_fine)):
                 lr_st = best_lr_s*lrs_range[::-1][j]
                 session.run(tf.compat.v1.global_variables_initializer()) # THIS RESETS THE MODEL???
-                history = test_learningRate_combo(model, niter=niter,rv_steps=rv_steps,
+                history = test_learningRate_combo(model, niter=niter,rv_opt_steps=rv_opt_steps,
                                         star_template_lr=lr_st,telluric_template_lr=lr_t)
                 result_grid_fine[i*len(lrs_range)+j] = [lr_t,lr_st,
                     np.where(history.nll_history[-1]<1,np.inf,history.nll_history[-1]<1),
@@ -264,11 +246,11 @@ def plotGrid(order, result_grid, nll_grid, test_range,
             plt.title('Order {}; lr_t {:.3}; lr_s {:.3}'.format(order,
                                                           result_grid[counter][0],
                                                           result_grid[counter][1]))
-            plt.plot(nll_grid[counter],'.-',alpha=0.5)
+            plt.plot(nll_grid[counter][np.isfinite(nll_grid[counter])],'.-',alpha=0.5)
             plt.plot(0,nll_grid[counter,0],'ro')
             plt.plot(np.argmin(nll_grid[counter]),nll_grid[counter].min(),'go')
             
-            plt.axhline(nll_grid[nll_grid>1].min(),color='g')
+            plt.axhline(np.nanmin(nll_grid[np.isfinite(nll_grid)]),color='g')
             plt.xlim(0,niter)
     plt.tight_layout()
     

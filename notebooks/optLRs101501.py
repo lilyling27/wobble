@@ -10,7 +10,7 @@ if __name__ == "__main__":
     starname = '101501_expres'
     datafile = '../data/{}.hdf5'.format(starname)
     R = 86 # the number of echelle orders total in the data set
-    orders = np.arange(20,80) # list of indices for the echelle orders to be tuned
+    orders = np.arange(35,80) # list of indices for the echelle orders to be tuned
     K_star = 0 # number of variable components for stellar spectrum
     K_t = 2 # number of variable components for telluric spectrum 
     reg_star_file = f'../regularization/55cnc_expres_star_K{K_star}.hdf5'
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     
     # create directory for plots if it doesn't exist:
     if plot:
-        plot_dir = f'../data/learning_rates/{starname}/'
+        plot_dir = f'../learning_rates/{starname}/'
         if not os.path.exists(plot_dir):
             os.makedirs(plot_dir)
     
@@ -37,7 +37,7 @@ if __name__ == "__main__":
         
     # load up the data we'll use for training:
     data = wobble.Data(datafile, orders=orders) # to get N_epochs
-    data.trim_bad_edges()
+    #data.trim_bad_edges()
         
     # improve each order's regularization:
     results = wobble.Results(data=data)
