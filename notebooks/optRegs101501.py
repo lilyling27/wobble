@@ -25,10 +25,10 @@ if __name__ == "__main__":
             os.makedirs(plot_dir)
     
     # create regularization parameter files if they don't exist:
-    star_filename = '../wobble/regularization/{0}_star_K{1}.hdf5'.format(starname, K_star)
+    star_filename = '../regularization/{0}_star_K{1}.hdf5'.format(starname, K_star)
     if not os.path.isfile(star_filename):
         generate_regularization_file(star_filename, R, type='star')
-    tellurics_filename = '../wobble/regularization/{0}_t_K{1}.hdf5'.format(starname, K_t)
+    tellurics_filename = '../regularization/{0}_t_K{1}.hdf5'.format(starname, K_t)
     if not os.path.isfile(tellurics_filename):                
         generate_regularization_file(tellurics_filename, R, type='telluric')
         
@@ -53,11 +53,12 @@ if __name__ == "__main__":
                     print("{0}: {1:.0e}".format(key, f[key][o]))
         objs = setup_data(r, data, validation_epochs)
         improve_order_regularization(o, star_filename, tellurics_filename,
-                                         *objs,
-                                         verbose=verbose, plot=plot, 
-                                         plot_minimal=plot_minimal, 
-                                         basename='{0}o{1}'.format(plot_dir, o), 
-                                         K_star=K_star, K_t=K_t, L1=True, L2=True)
+                                     *objs, rv_opt_steps=20,
+                                     verbose=verbose, plot=plot, 
+                                     plot_minimal=plot_minimal, 
+                                     basename='{0}o{1}'.format(plot_dir, o), 
+                                     K_star=K_star, K_t=K_t, L1=True, L2=True,
+                                     training_niter=250, validation_niter=1500)
         if verbose:                                 
             print('---- ORDER {0} COMPLETE ({1}/{2}) ----'.format(o,r,len(orders)-1))
             print("best values:")

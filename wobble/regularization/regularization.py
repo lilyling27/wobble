@@ -81,14 +81,14 @@ def setup_data(r, data, validation_epochs):
     validation_results = Results(validation_data)
     return training_data, training_results, validation_data, validation_results
     
-def setup_models(training_data, training_results,
+def setup_models(training_data, training_results, rv_opt_steps=1,
                  validation_data, validation_results, r=0, K_star=0, K_t=0):
     """
     Set up models for the training & validation objects generated 
     by `setup_data()`.          
     """
     training_model = Model(training_data, training_results, r)
-    training_model.add_star('star', variable_bases=K_star)
+    training_model.add_star('star', variable_bases=K_star, rv_opt_steps=rv_opt_steps,
     training_model.add_telluric('tellurics', rvs_fixed=True, variable_bases=K_t)
     training_model.setup()
     training_model.optimize(niter=0, verbose=False, rv_uncertainties=False)
@@ -144,9 +144,10 @@ def improve_order_regularization(o, star_filename, tellurics_filename,
                                  training_data, training_results,
                                  validation_data, validation_results,
                                  verbose=True, plot=False, plot_minimal=False,
-                                 basename='', 
+                                 basename='', rv_opt_steps=1,
                                  K_star=0, K_t=0, L1=True, L2=True,
-                                 tellurics_template_fixed=False): 
+                                 tellurics_template_fixed=False,
+                                 training_niter=200, validation_niter=1000): 
     """
     Use a validation scheme to determine the best regularization parameters for 
     all model components in a given order.
@@ -195,7 +196,8 @@ def improve_order_regularization(o, star_filename, tellurics_filename,
     
     training_model, validation_model = setup_models(training_data, training_results,
                                                     validation_data, validation_results,
-                                                    K_star=K_star, K_t=K_t)
+                                                    K_star=K_star, K_t=K_t,
+                                                    rv_opt_steps=rv_opt_steps)
 
     tensors_to_tune, tensor_names, tensor_components, regularization_dict = setup_tensors(o, 
                         star_filename, tellurics_filename, training_model, K_star=K_star, K_t=K_t)
@@ -204,7 +206,8 @@ def improve_order_regularization(o, star_filename, tellurics_filename,
         test_regularization_value(tensors_to_tune[0], 
                                   regularization_dict[tensors_to_tune[0]],
                                   training_model, validation_model, regularization_dict,
-                                  validation_data, validation_results, plot=False, verbose=False) # hack to initialize validation results
+                                  validation_data, validation_results, plot=False, verbose=False,
+                                  training_niter=training_niter, validation_niter=validation_niter) # hack to initialize validation results
         n = 0 # epoch to plot
         title = 'Initialization'
         filename = '{0}_init'.format(basename)
@@ -231,7 +234,8 @@ def improve_order_regularization(o, star_filename, tellurics_filename,
     if plot or plot_minimal:
         test_regularization_value(tensor, regularization_dict[tensor],
                                   training_model, validation_model, regularization_dict,
-                                  validation_data, validation_results, plot=False, verbose=False) # hack to update results
+                                  validation_data, validation_results, plot=False, verbose=False,
+                                  training_niter=training_niter, validation_niter=validation_niter) # hack to update results
         title = 'Final'
         filename = '{0}_final'.format(basename)
         plot_fit(0, n, validation_data, validation_results, title=title, basename=filename)    
@@ -259,7 +263,7 @@ def improve_order_regularization(o, star_filename, tellurics_filename,
     
     
 def improve_parameter(par, training_model, validation_model, regularization_dict, 
-                      validation_data, validation_results, 
+                      validation_data, validation_results,
                       plot=False, verbose=True, basename=''):
     """
     Perform a grid search to set the value of regularization parameter `par`.
@@ -276,7 +280,8 @@ def improve_parameter(par, training_model, validation_model, regularization_dict
         nll_grid[i] = test_regularization_value(par, val, training_model, 
                                                 validation_model, regularization_dict, 
                                                 validation_data, validation_results, 
-                                                plot=plot, verbose=verbose, basename=basename)
+                                                plot=plot, verbose=verbose, basename=basename,
+                                                training_niter=training_niter, validation_niter=validation_niter)
 
 
     # ensure that the minimum isn't on a grid edge:
@@ -284,9 +289,10 @@ def improve_parameter(par, training_model, validation_model, regularization_dict
     while (best_ind == 0 and val >= 1.e-2): # prevent runaway minimization
         val = grid[0]/10.
         new_nll = test_regularization_value(par, val, training_model, 
-                                                validation_model, regularization_dict, 
-                                                validation_data, validation_results, 
-                                                plot=plot, verbose=verbose, basename=basename)
+                                            validation_model, regularization_dict, 
+                                            validation_data, validation_results, 
+                                            plot=plot, verbose=verbose, basename=basename,
+                                            training_niter=training_niter, validation_niter=validation_niter)
         grid = np.append(val, grid)
         nll_grid = np.append(new_nll, nll_grid)
         best_ind = np.argmin(nll_grid)
@@ -295,8 +301,9 @@ def improve_parameter(par, training_model, validation_model, regularization_dict
         val = grid[-1]*10.
         new_nll = test_regularization_value(par, val, training_model, 
                                             validation_model, regularization_dict,  
-                                            validation_data, validation_results,                                                              
-                                            plot=plot, verbose=verbose, basename=basename)
+                                            validation_data, validation_results,
+                                            plot=plot, verbose=verbose, basename=basename,
+                                            training_niter=training_niter, validation_niter=validation_niter)
 
         grid = np.append(grid, val)
         nll_grid = np.append(nll_grid, new_nll)
@@ -352,7 +359,8 @@ def test_regularization_value(par, val, training_model, validation_model, regula
     for i in iterator:
         for c in validation_model.components:
             if not c.rvs_fixed:
-                session.run(c.opt_rvs, feed_dict=validation_dict) # HACK
+                for _ in range(c.rv_opt_steps):
+                    session.run(c.opt_rvs, feed_dict=validation_dict) # HACK
             if c.K > 0:
                 session.run(c.opt_basis_weights, feed_dict=validation_dict)
                 
